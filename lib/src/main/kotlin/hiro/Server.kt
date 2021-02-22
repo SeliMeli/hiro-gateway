@@ -48,7 +48,7 @@ fun main(args: Array<String>) {
   Server().bootstrap()
 }
 
-suspend fun ChannelFuture.awaitK() = suspendCoroutine<Any?> {
+suspend fun ChannelFuture.coAwait() = suspendCoroutine<Any?> {
   this.addListener {
     _ -> it.resumeWith(Result.success(null))
   }
