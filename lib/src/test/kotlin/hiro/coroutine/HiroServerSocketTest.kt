@@ -15,12 +15,6 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.time.Duration
 
-/**
- * @author  : luoweiyao
- * @created : 2021/2/22
- * @project : hiro-gateway
- * @package : hiro.coroutine
- */
 private val portSequence = generateSequence(10000) {
   it + 1
 }.iterator()
