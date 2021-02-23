@@ -64,6 +64,7 @@ fun main(args: Array<String>) {
 
 suspend fun ChannelFuture.coAwait() = suspendCoroutine<Any?> {
   this.addListener { _ ->
+    // TODO: error handling
     it.resumeWith(Result.success(null))
   }
 }
