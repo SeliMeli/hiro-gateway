@@ -2,6 +2,7 @@ package hiro
 
 import hiro.coroutine.HiroServerSocket
 import hiro.coroutine.HiroSocket
+import hiro.coroutine.NettyEventLoopGroupDispatcher
 import hiro.handler.DelayedEchoHandler
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
@@ -44,9 +45,9 @@ class Server {
     }
   }
 
-  fun coBootsrap() = runBlocking {
+  fun coBootsrap() = runBlocking(NettyEventLoopGroupDispatcher(NioEventLoopGroup())) {
     val serverSocket = HiroServerSocket.listenOn(InetSocketAddress(8081), NioEventLoopGroup())
-    while(true) {
+    while (true) {
       launch {
         val socket = serverSocket.accept()
         handleSocket(socket)
@@ -64,7 +65,7 @@ fun main(args: Array<String>) {
 }
 
 suspend fun ChannelFuture.coAwait() = suspendCoroutine<Any?> {
-  this.addListener {
-    _ -> it.resumeWith(Result.success(null))
+  this.addListener { _ ->
+    it.resumeWith(Result.success(null))
   }
 }
