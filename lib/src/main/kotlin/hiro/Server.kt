@@ -47,8 +47,8 @@ class Server {
   fun coBootsrap() = runBlocking(NettyEventLoopGroupDispatcher(NioEventLoopGroup())) {
     val serverSocket = HiroServerSocket.listenOn(InetSocketAddress(8081), NioEventLoopGroup())
     while (true) {
+      val socket = serverSocket.accept()
       launch {
-        val socket = serverSocket.accept()
         handleSocket(socket)
       }
     }
