@@ -16,6 +16,7 @@ dependencies {
   implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
   implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
   implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+  implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.4.2")
   implementation ("io.netty:netty-all:4.1.59.Final")
 
   testImplementation("io.mockk:mockk:1.10.6")
@@ -33,7 +34,7 @@ sourceSets.main {
 tasks.withType<KotlinCompile> {
   kotlinOptions {
     freeCompilerArgs = listOf("-Xjsr305=strict")
-    jvmTarget = "11"
+    jvmTarget = "1.8"
   }
 }
 
