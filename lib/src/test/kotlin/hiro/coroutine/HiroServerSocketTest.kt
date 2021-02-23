@@ -2,6 +2,7 @@ package hiro.coroutine
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -34,21 +35,23 @@ internal class HiroServerSocketTest {
 
   @Test
   fun `should return new HiroSocket when accept new connection`() {
-    runBlocking {
+    runBlockingInNio {
+      val channel = stubServer.init()
       stubServer.connect()
-      val result = stubServer.serverChannel.accept()
+      val result = channel.accept()
       assertThat(result).isNotNull()
     }
   }
 
   @Test
   fun `should queued connection when multiple connection arrives`() {
-    runBlocking {
+    runBlockingInNio {
+      val channel = stubServer.init()
       stubServer.connect()
       stubServer.connect()
-      stubServer.serverChannel.accept()
+      channel.accept()
       delay(3000)
-      val result = stubServer.serverChannel.accept()
+      val result = channel.accept()
       assertThat(result).isNotNull()
     }
   }
@@ -56,21 +59,22 @@ internal class HiroServerSocketTest {
   @Test
   internal fun `should hang when no connection arrives`() {
     assertThatExceptionOfType(TimeoutCancellationException::class.java).isThrownBy {
-      runBlocking {
+      runBlockingInNio {
         withTimeout(Duration.ofMillis(1000)) {
-          stubServer.serverChannel.accept()
+          stubServer.init().accept()
         }
       }
     }
   }
 
-  private class StubServer(val port: Int, eventLoopGroup: EventLoopGroup) {
-    val serverChannel = runBlocking {
-      HiroServerSocket.listenOn(InetSocketAddress(port), eventLoopGroup)
-    }
+  private class StubServer(val port: Int, private val eventLoopGroup: EventLoopGroup) {
+    suspend fun init() = HiroServerSocket.listenOn(InetSocketAddress(port), eventLoopGroup)
 
     fun connect(): Socket {
       return Socket("127.0.0.1", port)
     }
   }
+
+  private fun <T> runBlockingInNio(block: suspend CoroutineScope.() -> T) =
+    runBlocking(NettyEventLoopGroupDispatcher(NioEventLoopGroup()), block = block)
 }

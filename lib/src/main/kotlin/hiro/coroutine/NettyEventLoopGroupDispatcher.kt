@@ -5,7 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Runnable
 import kotlin.coroutines.CoroutineContext
 
-class NettyEventLoopGroupDispatcher(private val eventLoopGroup: EventLoopGroup): CoroutineDispatcher() {
+class NettyEventLoopGroupDispatcher(internal val eventLoopGroup: EventLoopGroup): CoroutineDispatcher() {
   override fun dispatch(context: CoroutineContext, block: Runnable) {
     eventLoopGroup.execute(block)
   }

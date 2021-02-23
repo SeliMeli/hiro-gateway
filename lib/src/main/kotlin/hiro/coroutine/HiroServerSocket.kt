@@ -11,7 +11,9 @@ import io.netty.channel.kqueue.KQueueEventLoopGroup
 import io.netty.channel.kqueue.KQueueServerSocketChannel
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.sendBlocking
+import kotlinx.coroutines.currentCoroutineContext
 import java.net.SocketAddress
 import io.netty.channel.Channel as NettyChannel
 import kotlinx.coroutines.channels.Channel as KChannel
@@ -24,9 +26,25 @@ import kotlinx.coroutines.channels.Channel as KChannel
  * @package : hiro.coroutine
  */
 class HiroServerSocket private constructor() {
-  private val coroutineChannel = KChannel<HiroSocket>()
+  private val nettyChannelCache = KChannel<NettyChannel>()
 
-  suspend fun accept(): HiroSocket = coroutineChannel.receive()
+  suspend fun accept(): HiroSocket {
+    val uninitializedNettyChannel = nettyChannelCache.receive()
+    // TODO(add handler to channel)
+    uninitializedNettyChannel.pipeline().addLast()
+    val registerFuture = getCurrentEventLoopGroup().register(uninitializedNettyChannel)
+    registerFuture.coAwait()
+    return HiroSocket(registerFuture.channel())
+  }
+
+  @OptIn(ExperimentalStdlibApi::class)
+  private suspend fun getCurrentEventLoopGroup(): EventLoopGroup {
+    val coroutineDispatcher = currentCoroutineContext()[CoroutineDispatcher]
+    if (coroutineDispatcher !is NettyEventLoopGroupDispatcher) {
+      throw UnsupportedDispatcherError(coroutineDispatcher)
+    }
+    return coroutineDispatcher.eventLoopGroup
+  }
 
   companion object {
     suspend fun listenOn(inetSocketAddress: SocketAddress, bossEventLoop: EventLoopGroup): HiroServerSocket {
@@ -73,18 +91,16 @@ class HiroServerSocket private constructor() {
       bossEventLoop: EventLoopGroup,
       inetSocketAddress: SocketAddress
     ) {
-      nettyServerSocketChannel.pipeline().addLast(HiroServerSocketAcceptor(hiroServerSocket.coroutineChannel))
+      nettyServerSocketChannel.pipeline()
+        .addLast(HiroServerSocketAcceptor(hiroServerSocket.nettyChannelCache))
       bossEventLoop.register(nettyServerSocketChannel).coAwait()
       nettyServerSocketChannel.bind(inetSocketAddress).coAwait()
     }
   }
 }
 
-private class HiroServerSocketAcceptor(private val coroutineChannel: KChannel<HiroSocket>) :
+private class HiroServerSocketAcceptor(private val nettyChannelCache: KChannel<NettyChannel>) :
   ChannelInboundHandlerAdapter() {
-  override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
-    val channel = msg as NettyChannel
-
-    coroutineChannel.sendBlocking(HiroSocket())
-  }
+  override fun channelRead(ctx: ChannelHandlerContext, msg: Any): Unit =
+    nettyChannelCache.sendBlocking(msg as NettyChannel)
 }
