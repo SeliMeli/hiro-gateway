@@ -3,7 +3,6 @@ package hiro
 import hiro.coroutine.HiroServerSocket
 import hiro.coroutine.HiroSocket
 import hiro.coroutine.NettyEventLoopGroupDispatcher
-import hiro.handler.DelayedEchoHandler
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelInitializer
@@ -33,7 +32,7 @@ class Server {
         .handler(LoggingHandler(LogLevel.DEBUG))
         .childHandler(object : ChannelInitializer<SocketChannel>() {
           override fun initChannel(ch: SocketChannel) {
-            ch.pipeline().addLast(HttpRequestDecoder(), HttpResponseEncoder(), DelayedEchoHandler())
+            ch.pipeline().addLast(HttpRequestDecoder(), HttpResponseEncoder())
           }
         })
         .localAddress(10920)
