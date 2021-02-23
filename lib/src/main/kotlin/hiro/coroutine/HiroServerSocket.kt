@@ -6,11 +6,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.handler.logging.LogLevel
-import io.netty.handler.logging.LoggingHandler
 import kotlinx.coroutines.channels.sendBlocking
-import kotlinx.coroutines.channels.Channel as KChannel
 import java.net.SocketAddress
+import io.netty.channel.Channel as NettyChannel
+import kotlinx.coroutines.channels.Channel as KChannel
 
 
 /**
@@ -19,7 +18,7 @@ import java.net.SocketAddress
  * @project : hiro-gateway
  * @package : hiro.coroutine
  */
-class HiroServerSocket {
+class HiroServerSocket private constructor() {
   private val coroutineChannel = KChannel<HiroSocket>()
 
   suspend fun accept(): HiroSocket = coroutineChannel.receive()
@@ -27,7 +26,7 @@ class HiroServerSocket {
   companion object {
     suspend fun listenOn(inetSocketAddress: SocketAddress, bossEventLoop: EventLoopGroup): HiroServerSocket {
       val hiroServerSocket = HiroServerSocket()
-      when(bossEventLoop) {
+      when (bossEventLoop) {
         is NioEventLoopGroup -> listenOnNio(inetSocketAddress, bossEventLoop, hiroServerSocket)
         else -> throw NotImplementedError()
       }
@@ -47,8 +46,11 @@ class HiroServerSocket {
   }
 }
 
-private class HiroServerSocketAcceptor(private val coroutineChannel: KChannel<HiroSocket>): ChannelInboundHandlerAdapter() {
+private class HiroServerSocketAcceptor(private val coroutineChannel: KChannel<HiroSocket>) :
+  ChannelInboundHandlerAdapter() {
   override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
+    val channel = msg as NettyChannel
+
     coroutineChannel.sendBlocking(HiroSocket())
   }
 }

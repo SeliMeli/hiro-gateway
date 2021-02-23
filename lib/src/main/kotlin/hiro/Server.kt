@@ -1,22 +1,23 @@
 package hiro
 
+import hiro.coroutine.HiroServerSocket
+import hiro.coroutine.HiroSocket
 import hiro.handler.DelayedEchoHandler
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
-import io.netty.channel.ChannelInboundHandler
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.kqueue.KQueueEventLoopGroup
 import io.netty.channel.kqueue.KQueueServerSocketChannel
-import io.netty.channel.socket.ServerSocketChannel
+import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
-import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpRequestDecoder
-import io.netty.handler.codec.http.HttpRequestEncoder
 import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.net.SocketAddress
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.net.InetSocketAddress
 import kotlin.coroutines.suspendCoroutine
 
 
@@ -41,6 +42,20 @@ class Server {
       boss.shutdownGracefully()
       worker.shutdownGracefully()
     }
+  }
+
+  fun coBootsrap() = runBlocking {
+    val serverSocket = HiroServerSocket.listenOn(InetSocketAddress(8081), NioEventLoopGroup())
+    while(true) {
+      launch {
+        val socket = serverSocket.accept()
+        handleSocket(socket)
+      }
+    }
+  }
+
+  private suspend fun handleSocket(socket: HiroSocket) {
+    delay(200)
   }
 }
 
