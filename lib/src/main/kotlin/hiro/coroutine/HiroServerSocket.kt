@@ -23,20 +23,7 @@ class HiroServerSocket private constructor() {
 
   suspend fun accept(): HiroSocket {
     val uninitializedNettyChannel = nettyChannelCache.receive()
-    // TODO(add handler to channel)
-    uninitializedNettyChannel.pipeline().addLast()
-    val registerFuture = getCurrentEventLoopGroup().register(uninitializedNettyChannel)
-    registerFuture.coAwait()
-    return HiroSocket(registerFuture.channel())
-  }
-
-  @OptIn(ExperimentalStdlibApi::class)
-  private suspend fun getCurrentEventLoopGroup(): EventLoopGroup {
-    val coroutineDispatcher = currentCoroutineContext()[CoroutineDispatcher]
-    if (coroutineDispatcher !is NettyEventLoopGroupDispatcher) {
-      throw UnsupportedDispatcherError(coroutineDispatcher)
-    }
-    return coroutineDispatcher.eventLoopGroup
+    return HiroSocket.bindChannel(uninitializedNettyChannel)
   }
 
   companion object {
